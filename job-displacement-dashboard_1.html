@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KI & Jobverdrängung 2026 – Interaktives Dashboard</title>
+<meta name="description" content="Interaktives Dashboard zur KI-Automatisierung von Arbeitsplätzen. Daten: WEF Future of Jobs 2025, McKinsey 2025, Goldman Sachs, OECD, Oxford.">
+<meta property="og:title" content="KI & Jobverdrängung 2026">
+<meta property="og:description" content="Welche Jobs sind wirklich gefährdet? Daten aus WEF, McKinsey, Goldman Sachs und Oxford.">
+<meta name="author" content="Boris Janek · OPTIMINNO – The Change Doktor">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --o1: #da540d;
+    --o2: #FCDC04;
+    --o3: #bebc9b;
+    --o4: #94D5F4;
+    --o5: #994804;
+    --bg: #ffffff;
+    --bg2: #f5f4f0;
+    --bg3: #eceae4;
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --bg2: #252522;
+      --bg3: #2e2e2b;
+      --text: #f0ede6;
+      --text2: #a0a09a;
+      --border: rgba(255,255,255,0.12);
+      --border2: rgba(255,255,255,0.22);
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .page-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .brand {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--o1);
+    display: inline-block;
+  }
+  .page-header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .page-header .sub {
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .update-badge {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 10px;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.75rem;
+  }
+  .m-card {
+    background: var(--bg2);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 1rem;
+  }
+  .m-card .lbl { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .m-card .val { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .m-card .src { font-size: 10px; color: var(--text2); margin-top: 3px; }
+  .tab-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    font-size: 13px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { background: var(--bg2); }
+  .tab-btn.active {
+    background: var(--o1);
+    color: #fff;
+    border-color: var(--o1);
+  }
+  .section { margin-bottom: 2rem; }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+    align-items: center;
+  }
+  .controls label { font-size: 13px; color: var(--text2); }
+  .controls select {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .filter-chip {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    cursor: pointer;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .filter-chip:hover { background: var(--bg2); }
+  .filter-chip.on { background: var(--o1); color: #fff; border-color: var(--o1); }
+  .risk-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 9px;
+    font-size: 13px;
+  }
+  .job-name {
+    min-width: 180px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bar-wrap {
+    flex: 1;
+    background: var(--bg3);
+    border-radius: 3px;
+    height: 14px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .pct { min-width: 36px; text-align: right; color: var(--text2); font-size: 12px; }
+  .risk-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-left: 5px;
+  }
+  .badge-high { background: #fde0d6; color: #993c1d; }
+  .badge-med  { background: #faeeda; color: #854f0b; }
+  .badge-low  { background: #eaf3de; color: #3b6d11; }
+  .info-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    margin-top: 1rem;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text2);
+  }
+  .info-box strong { color: var(--text); font-weight: 600; }
+  .src-tag {
+    font-size: 10px;
+    background: var(--bg2);
+    color: var(--text2);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin: 2px;
+    display: inline-block;
+    border: 1px solid var(--border);
+  }
+  .sector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .sector-card {
+    background: var(--bg2);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: border 0.15s, box-shadow 0.15s;
+    border: 2px solid transparent;
+  }
+  .sector-card:hover { border-color: var(--border2); }
+  .sector-card.sel { border-color: var(--o1); }
+  .sector-card .s-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .sector-card .s-bar { height: 6px; border-radius: 3px; margin-bottom: 6px; }
+  .sector-card .s-stat { font-size: 11px; color: var(--text2); }
+  .tl-row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; margin-bottom: 9px; align-items: start; font-size: 13px; }
+  .tl-lbl { color: var(--text2); text-align: right; padding-right: 8px; font-size: 12px; padding-top: 3px; }
+  .tl-bar { height: 24px; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: 11px; font-weight: 600; color: #fff; min-width: 80px; }
+  .tl-detail { font-size: 11px; color: var(--text2); margin-top: 3px; }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text2); }
+  .leg-item { display: flex; align-items: center; gap: 5px; }
+  .leg-box { width: 12px; height: 12px; border-radius: 2px; }
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer a { color: var(--o1); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+  .legal-section {
+    display: none;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .legal-section.active { display: block; }
+  .legal-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  .legal-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 1.25rem 0 0.4rem;
+  }
+  .legal-section p, .legal-section li {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+  }
+  .legal-section ul { padding-left: 1.2rem; margin-bottom: 0.75rem; }
+  .legal-back {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+    color: var(--o1);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: underline;
+  }
+  .legal-back:hover { opacity: 0.8; }
+
+  @media (max-width: 600px) {
+    .job-name { min-width: 120px; }
+    .dash-grid { grid-template-columns: repeat(2, 1fr); }
+    .tl-row { grid-template-columns: 80px 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="page-header">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      OPTIMINNO – The Change Doktor · Boris Janek
+    </div>
+    <h1>KI &amp; Jobverdrängung 2026</h1>
+    <p class="sub">Interaktives Dashboard · Daten: WEF Future of Jobs 2025 · McKinsey 2025 · Goldman Sachs · OECD · Oxford University</p>
+    <span class="update-badge">Aktualisiert Mai 2026</span>
+  </header>
+
+  <div class="dash-grid">
+    <div class="m-card"><div class="lbl">Jobs verdrängt bis 2030</div><div class="val">92 Mio.</div><div class="src">WEF Future of Jobs 2025</div></div>
+    <div class="m-card"><div class="lbl">Neue Jobs entstehen</div><div class="val">170 Mio.</div><div class="src">WEF 2025 · Nettogewinn +78 Mio.</div></div>
+    <div class="m-card"><div class="lbl">Aufgaben automatisierbar</div><div class="val">57%</div><div class="src">McKinsey 2025 · US-Arbeitsstunden</div></div>
+    <div class="m-card"><div class="lbl">Jobs weltweit betroffen</div><div class="val">300 Mio.</div><div class="src">Goldman Sachs · teilw. oder ganz</div></div>
+    <div class="m-card"><div class="lbl">Skills veraltet bis 2030</div><div class="val">39%</div><div class="src">WEF 2025 · Arbeitgeber-Survey</div></div>
+    <div class="m-card"><div class="lbl">KI-Produktivitätsprämie</div><div class="val">+25%</div><div class="src">PwC 2025 · AI-Skill-Lohnvorteil</div></div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('risk')">Risikoranking</button>
+    <button class="tab-btn" onclick="switchTab('timeline')">Zeitachse</button>
+    <button class="tab-btn" onclick="switchTab('sectors')">Branchen</button>
+    <button class="tab-btn" onclick="switchTab('chart')">Szenarien</button>
+  </div>
+
+  <div id="tab-risk" class="section">
+    <div class="controls">
+      <label>Filter:</label>
+      <button class="filter-chip on" onclick="chip(this,'all')">Alle</button>
+      <button class="filter-chip" onclick="chip(this,'high')">Hoch-Risiko</button>
+      <button class="filter-chip" onclick="chip(this,'med')">Mittel</button>
+      <button class="filter-chip" onclick="chip(this,'low')">Gering</button>
+      <label style="margin-left:8px">Sortierung:</label>
+      <select id="sortSel" onchange="renderRisk()">
+        <option value="desc">Risiko ↓</option>
+        <option value="asc">Risiko ↑</option>
+        <option value="alpha">A–Z</option>
+      </select>
+    </div>
+    <div id="risk-list"></div>
+    <div class="info-box">
+      <strong>Lesehilfe:</strong> Der Prozentwert zeigt die geschätzte Wahrscheinlichkeit starker Automatisierung in den nächsten 10–15 Jahren.
+      <span class="src-tag">Oxford / Frey &amp; Osborne 2024</span>
+      <span class="src-tag">WEF Future of Jobs 2025</span>
+      <span class="src-tag">OECD 2024</span>
+      <span class="src-tag">McKinsey 2025</span><br><br>
+      Wichtig: Automatisierung bedeutet meist Transformation, nicht Elimination. Die meisten Jobs werden verändert, nicht ersetzt.
+    </div>
+  </div>
+
+  <div id="tab-timeline" class="section" style="display:none">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Hauptautomatisierungswellen nach Zeitfenster · Daten: WEF Future of Jobs 2025 &amp; McKinsey 2025</p>
+    <div id="tl-list"></div>
+    <div class="info-box">
+      <strong>Anthropic Economic Index, Januar 2026:</strong> 52% aller KI-Interaktionen sind Augmentierung — Menschen werden schneller und besser — keine direkte Job-Substitution. Transformation kommt vor Elimination.
+    </div>
+  </div>
+
+  <div id="tab-sectors" class="section" style="display:none">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Klicke auf eine Branche für Details · Daten: Goldman Sachs + McKinsey 2025</p>
+    <div class="sector-grid" id="sector-grid"></div>
+    <div id="sector-detail"></div>
+  </div>
+
+  <div id="tab-chart" class="section" style="display:none">
+    <div class="controls">
+      <label>Szenario:</label>
+      <select id="scenSel" onchange="renderChart()">
+        <option value="base">WEF-Basisszenario</option>
+        <option value="fast">McKinsey schnelle Adoption</option>
+        <option value="slow">ILO konservativ</option>
+      </select>
+      <label style="margin-left:8px">Region:</label>
+      <select id="regSel" onchange="renderChart()">
+        <option value="global">Global</option>
+        <option value="dach">DACH</option>
+        <option value="us">USA</option>
+      </select>
+    </div>
+    <div style="position:relative;width:100%;height:300px;margin-top:.5rem">
+      <canvas id="tChart" role="img" aria-label="Liniendiagramm Automatisierungsszenarien 2024–2035. Zeigt prozentualen Anteil automatisierter, transformierter und neuer Jobs.">
+        Liniendiagramm zu Automatisierungsszenarien 2024–2035.
+      </canvas>
+    </div>
+    <div class="chart-legend">
+      <span class="leg-item"><span class="leg-box" style="background:#da540d"></span>Automatisiert (verdrängt)</span>
+      <span class="leg-item"><span class="leg-box" style="background:#94D5F4"></span>Transformiert (verändert)</span>
+      <span class="leg-item"><span class="leg-box" style="background:#3b6d11"></span>Neue Jobs (entstehen)</span>
+    </div>
+    <div class="info-box" style="margin-top:1rem">
+      <strong>WEF 2025 Nettorechnung:</strong> 92 Mio. verdrängt – 170 Mio. neu = <strong>+78 Mio. Jobs global bis 2030.</strong>
+      McKinsey 2025: 57% der US-Arbeitsstunden sind heute technisch automatisierbar. Die Umsetzungsgeschwindigkeit entscheidet über das Szenario.
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div>
+      Erstellt von <a href="https://optiminno.de" target="_blank">Boris Janek · OPTIMINNO</a> –
+      <a href="https://thechangedoktor.substack.com" target="_blank">The Change Doktor</a>
+    </div>
+    <div>Quellen: WEF Future of Jobs 2025 · McKinsey Global Institute 2025 · Goldman Sachs Research · OECD 2024 · Oxford/Frey &amp; Osborne 2024 · PwC AI Jobs Barometer 2025 · Anthropic Economic Index 2026</div>
+    <div style="width:100%;margin-top:6px">
+      <a href="#" onclick="showLegal('impressum');return false;">Impressum</a>
+      &nbsp;·&nbsp;
+      <a href="#" onclick="showLegal('datenschutz');return false;">Datenschutzerklärung</a>
+    </div>
+  </footer>
+
+  <!-- IMPRESSUM -->
+  <div class="legal-section" id="impressum">
+    <button class="legal-back" onclick="hideLegal()">← Zurück zum Dashboard</button>
+    <h2>Impressum</h2>
+    <h3>Angaben gemäß § 5 TMG</h3>
+    <p>
+      Boris Janek<br>
+      OPTIMINNO – KI-Strategie &amp; Human-AI-Fit Coaching<br>
+      Stakerseite 22<br>
+      41564 Kaarst<br>
+      Deutschland
+    </p>
+    <h3>Kontakt</h3>
+    <p>
+      Telefon: <a href="tel:+4915150771883">+49 151 50771883</a><br>
+      E-Mail: <a href="mailto:b.janek@optiminno.de">b.janek@optiminno.de</a><br>
+      Website: <a href="https://optiminno.de" target="_blank">www.optiminno.de</a>
+    </p>
+    <h3>Umsatzsteuer</h3>
+    <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung). Es wird keine Umsatzsteuer-Identifikationsnummer ausgewiesen.</p>
+    <h3>Berufsbezeichnung und berufsrechtliche Regelungen</h3>
+    <p>Berufsbezeichnung: KI-Strategieberater, Human-AI-Fit Coach (freiberuflich, selbstständig). Die Berufsbezeichnung wurde nicht durch staatliche Zulassung verliehen; es bestehen keine spezifischen berufsrechtlichen Regelungen.</p>
+    <h3>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h3>
+    <p>Boris Janek, Stakerseite 22, 41564 Kaarst</p>
+    <h3>Haftung für Inhalte</h3>
+    <p>Die Inhalte dieser Seite wurden mit größtmöglicher Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte kann jedoch keine Gewähr übernommen werden. Die auf diesem Dashboard dargestellten Daten basieren auf öffentlich zugänglichen Studien und Prognosen Dritter (WEF, McKinsey, Goldman Sachs, OECD, Oxford University u.a.). Sie dienen ausschließlich der Information und Bildung. Eine Haftung für die Richtigkeit der zitierten Quellen oder für Entscheidungen, die auf Basis dieser Daten getroffen werden, wird ausgeschlossen.</p>
+    <h3>Haftung für Links</h3>
+    <p>Diese Seite enthält Links zu externen Websites Dritter. Auf deren Inhalte haben wir keinen Einfluss. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.</p>
+    <h3>Urheberrecht</h3>
+    <p>Die durch den Seitenbetreiber erstellten Inhalte und Werke auf dieser Seite unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechts bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet.</p>
+    <button class="legal-back" onclick="hideLegal()">← Zurück zum Dashboard</button>
+  </div>
+
+  <!-- DATENSCHUTZERKLÄRUNG -->
+  <div class="legal-section" id="datenschutz">
+    <button class="legal-back" onclick="hideLegal()">← Zurück zum Dashboard</button>
+    <h2>Datenschutzerklärung</h2>
+    <h3>1. Verantwortlicher</h3>
+    <p>
+      Boris Janek · OPTIMINNO<br>
+      Stakerseite 22, 41564 Kaarst<br>
+      E-Mail: <a href="mailto:b.janek@optiminno.de">b.janek@optiminno.de</a><br>
+      Telefon: <a href="tel:+4915150771883">+49 151 50771883</a>
+    </p>
+    <h3>2. Allgemeines zur Datenverarbeitung</h3>
+    <p>Diese Seite erhebt und verarbeitet keine personenbezogenen Daten der Nutzer. Es werden keine Cookies gesetzt, keine Tracking-Skripte eingebunden und keine Nutzerdaten an Dritte übermittelt.</p>
+    <p>Das Dashboard ist eine statische HTML-Seite ohne serverseitige Verarbeitung. Alle Berechnungen und Darstellungen erfolgen ausschließlich lokal im Browser des Nutzers.</p>
+    <h3>3. Hosting (GitHub Pages)</h3>
+    <p>Diese Seite wird über GitHub Pages (GitHub Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA) gehostet. Beim Aufruf der Seite werden durch GitHub technisch notwendige Verbindungsdaten verarbeitet (IP-Adresse, Zeitpunkt des Zugriffs, übertragene Datenmenge, Browsertyp). Diese Verarbeitung erfolgt auf Basis von Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der technischen Bereitstellung der Seite). Weitere Informationen: <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank">GitHub Privacy Statement</a>.</p>
+    <h3>4. Externe Ressourcen (CDN)</h3>
+    <p>Zum Laden der Diagrammbibliothek Chart.js wird eine Verbindung zu <strong>cdnjs.cloudflare.com</strong> (Cloudflare Inc., USA) hergestellt. Dabei kann die IP-Adresse des Nutzers an Cloudflare übermittelt werden. Die Einbindung erfolgt auf Basis von Art. 6 Abs. 1 lit. f DSGVO. Datenschutzinformationen von Cloudflare: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank">cloudflare.com/privacypolicy</a>.</p>
+    <h3>5. Keine Cookies, kein Tracking</h3>
+    <p>Diese Seite verwendet keine Cookies. Es werden keine Analyse- oder Tracking-Werkzeuge (z.B. Google Analytics, Matomo o.ä.) eingesetzt. Es findet keine Profilbildung der Nutzer statt.</p>
+    <h3>6. Keine Nutzereingaben / Kontaktformulare</h3>
+    <p>Diese Seite enthält kein Kontaktformular und keine Möglichkeit zur Dateneingabe durch Nutzer. Es werden keine personenbezogenen Daten aktiv erhoben.</p>
+    <h3>7. Rechte der betroffenen Personen</h3>
+    <p>Da keine personenbezogenen Daten durch den Seitenbetreiber erhoben oder gespeichert werden, sind die nachfolgend genannten Rechte auf die Datenverarbeitung durch GitHub und Cloudflare anwendbar. Gegenüber dem Seitenbetreiber bestehen folgende Rechte gemäß DSGVO:</p>
+    <ul>
+      <li>Recht auf Auskunft (Art. 15 DSGVO)</li>
+      <li>Recht auf Berichtigung (Art. 16 DSGVO)</li>
+      <li>Recht auf Löschung (Art. 17 DSGVO)</li>
+      <li>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+      <li>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</li>
+      <li>Beschwerderecht bei einer Aufsichtsbehörde (Art. 77 DSGVO)</li>
+    </ul>
+    <p>Für Nordrhein-Westfalen zuständige Aufsichtsbehörde: Landesbeauftragte für Datenschutz und Informationsfreiheit NRW, <a href="https://www.ldi.nrw.de" target="_blank">www.ldi.nrw.de</a>.</p>
+    <h3>8. Aktualität dieser Datenschutzerklärung</h3>
+    <p>Stand: Mai 2026. Wir behalten uns vor, diese Datenschutzerklärung bei Änderungen der Seite oder der Rechtslage anzupassen.</p>
+    <button class="legal-back" onclick="hideLegal()">← Zurück zum Dashboard</button>
+  </div>
+
+</div>
+
+<script>
+const jobs=[
+  {name:"Telemarketers",risk:99,cat:"high",wave:"2024–2026",src:"Oxford"},
+  {name:"Dateneingabe-Fachkraft",risk:99,cat:"high",wave:"2024–2026",src:"WEF/Oxford"},
+  {name:"Kreditsachbearbeiter/in",risk:98,cat:"high",wave:"2024–2027",src:"Goldman Sachs"},
+  {name:"Versicherungsunterzeichner/in",risk:98,cat:"high",wave:"2024–2027",src:"Oxford"},
+  {name:"Kassierer/in",risk:97,cat:"high",wave:"2024–2027",src:"WEF 2025"},
+  {name:"Paralegal / Rechtsassistenz",risk:94,cat:"high",wave:"2024–2027",src:"Goldman Sachs"},
+  {name:"Buchhaltung (Routine)",risk:94,cat:"high",wave:"2025–2028",src:"McKinsey"},
+  {name:"Telefonvermittlung",risk:92,cat:"high",wave:"2024–2026",src:"OECD"},
+  {name:"Postbote/-botin",risk:90,cat:"high",wave:"2025–2030",src:"Oxford"},
+  {name:"Lagerlogistik",risk:87,cat:"high",wave:"2025–2030",src:"McKinsey"},
+  {name:"Kundenservice Tier-1",risk:85,cat:"high",wave:"2024–2027",src:"WEF 2025"},
+  {name:"LKW-Fahrer/in",risk:79,cat:"high",wave:"2027–2033",src:"McKinsey"},
+  {name:"Übersetzer/in (Standard)",risk:82,cat:"high",wave:"2024–2027",src:"Oxford"},
+  {name:"Versicherungsmakler/in",risk:74,cat:"high",wave:"2025–2029",src:"Goldman Sachs"},
+  {name:"Radiologe/in (Diagnose)",risk:65,cat:"med",wave:"2026–2032",src:"OECD"},
+  {name:"Finanzanalyst/in",risk:61,cat:"med",wave:"2026–2031",src:"WEF 2025"},
+  {name:"Journalist/in",risk:58,cat:"med",wave:"2025–2030",src:"OECD"},
+  {name:"HR-Manager/in",risk:55,cat:"med",wave:"2027–2032",src:"McKinsey"},
+  {name:"Content Creator",risk:45,cat:"med",wave:"2026–2031",src:"WEF 2025"},
+  {name:"Grafikdesigner/in",risk:49,cat:"med",wave:"2026–2032",src:"WEF 2025"},
+  {name:"Unternehmensberater/in",risk:31,cat:"low",wave:"2030+",src:"McKinsey"},
+  {name:"Softwareentwickler/in",risk:27,cat:"low",wave:"2028–2035",src:"BLS +17,9%"},
+  {name:"Handwerker/in",risk:22,cat:"low",wave:"2030+",src:"OECD"},
+  {name:"Lehrer/in",risk:17,cat:"low",wave:"2030+",src:"WEF 2025"},
+  {name:"Pflegefachkraft",risk:10,cat:"low",wave:"kaum betroffen",src:"ILO"},
+  {name:"Psychotherapeut/in",risk:8,cat:"low",wave:"keine Welle",src:"Oxford"},
+  {name:"KI-Engineer / AI Trainer",risk:3,cat:"low",wave:"Wachstum +140%",src:"WEF 2025"},
+];
+
+const sectors=[
+  {name:"Finanzen & Versicherung",risk:82,dis:3.2,new:0.9,color:"#da540d",detail:"Goldman Sachs: höchste KI-Exposition aller Sektoren. Automatisierung in Compliance, Handel und Kreditprüfung läuft bereits. GS selbst automatisiert Legal & Compliance Operations. Regulatorische Komplexität schützt Beratungsrollen."},
+  {name:"Logistik & Transport",risk:78,dis:5.1,new:1.4,color:"#994804",detail:"McKinsey: Autonome Fahrzeuge könnten 1,5 Mio. US-Truckerjobs bis 2030 gefährden. MIT/Boston University: 2 Mio. Fertigungsarbeiter bis 2026 bereits durch Robotik ersetzt. Letzte-Meile bleibt menschlich."},
+  {name:"Handel & Retail",risk:75,dis:4.7,new:1.2,color:"#ba7517",detail:"WEF 2025: 65% der Kassenjobs unter starkem Automatisierungsdruck. Walmart und Sam's Club: 20.000 Positionen durch Self-Checkout & KI-Verifizierung. Erlebnishandel und Beratungsverkauf wachsen gegen den Trend."},
+  {name:"Verwaltung & Büro",risk:70,dis:6.4,new:1.8,color:"#856b10",detail:"McKinsey: 46% aller Bürotasks heute schon automatisierbar. WEF: 7,5 Mio. Dateneingabe- und Admin-Jobs bis 2027 gefährdet. Strategische Koordination, Stakeholder-Management und Entscheidungsverantwortung bleiben menschlich."},
+  {name:"Gesundheit",risk:28,dis:1.1,new:3.4,color:"#3b6d11",detail:"ILO: Generative KI augmentiert Pflegekräfte eher als sie zu ersetzen. Steigende Nachfrage durch demografischen Wandel überwiegt Automatisierungseffekte deutlich. Einer der größten Nettowachstumssektoren laut WEF 2025."},
+  {name:"IT & Technologie",risk:22,dis:0.8,new:4.9,color:"#185fa5",detail:"WEF 2025: Big Data Specialist, AI/ML Engineer und Cybersecurity wachsen um 80–140%. BLS: Softwareentwicklung +17,9% bis 2033. Stärkstes Nettowachstum aller Sektoren — trotz oder wegen KI."},
+  {name:"Bildung",risk:15,dis:0.4,new:1.1,color:"#0f6e56",detail:"WEF 2025: 59 von 100 Beschäftigten brauchen bis 2030 Umschulung — das treibt Bildungsnachfrage. Menschliche Beziehung, Mentoring und emotionale Intelligenz bleiben der Kern nicht automatisierbarer Pädagogik."},
+  {name:"Kreativwirtschaft",risk:50,dis:1.9,new:2.1,color:"#533ab7",detail:"WEF 2025: Stärkste Unsicherheit aller Sektoren. Generative KI unter Druck bei Illustration, Texter, Routine-Design. Konzept, Strategie und Kundenbeziehung bleiben human. Nettobilanz knapp positiv — mit großer Varianz."},
+];
+
+let activeFilter='all';
+let chartInst=null;
+
+function switchTab(t){
+  ['risk','timeline','sectors','chart'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?'block':'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active',['risk','timeline','sectors','chart'][i]===t);
+  });
+  if(t==='chart') setTimeout(renderChart,80);
+}
+
+function chip(el,f){
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  activeFilter=f;
+  renderRisk();
+}
+
+function getCol(r){
+  return r>=75?'#da540d':r>=45?'#ba7517':'#3b6d11';
+}
+
+function renderRisk(){
+  const sort=document.getElementById('sortSel').value;
+  let data=[...jobs];
+  if(activeFilter==='high') data=data.filter(j=>j.cat==='high');
+  else if(activeFilter==='med') data=data.filter(j=>j.cat==='med');
+  else if(activeFilter==='low') data=data.filter(j=>j.cat==='low');
+  if(sort==='desc') data.sort((a,b)=>b.risk-a.risk);
+  else if(sort==='asc') data.sort((a,b)=>a.risk-b.risk);
+  else data.sort((a,b)=>a.name.localeCompare(b.name,'de'));
+
+  document.getElementById('risk-list').innerHTML=data.map(j=>{
+    const badge=j.cat==='high'?'<span class="risk-badge badge-high">hoch</span>':
+      j.cat==='med'?'<span class="risk-badge badge-med">mittel</span>':
+      '<span class="risk-badge badge-low">gering</span>';
+    return `<div class="risk-bar-row">
+      <span class="job-name">${j.name}${badge}</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${j.risk}%;background:${getCol(j.risk)}"></div></div>
+      <span class="pct">${j.risk}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderTimeline(){
+  const waves=[
+    {lbl:"2024–2026",jobs:["Telemarketers","Dateneingabe","Telefonvermittlung","Übersetzer (Routine)"],color:"#da540d",w:28},
+    {lbl:"2025–2028",jobs:["Buchhaltung Routine","Kundenservice Tier-1","Paralegal","Kassierer"],color:"#994804",w:46},
+    {lbl:"2027–2030",jobs:["Lagerlogistik","Versicherungsbearbeitung","Postdienste","Finanzanalyse"],color:"#ba7517",w:63},
+    {lbl:"2029–2032",jobs:["LKW-Fahren","Grafikdesign Routine","HR-Basis","Content-Produktion"],color:"#856b10",w:79},
+    {lbl:"2032–2035",jobs:["Teile Softwareentwicklung","Beratung Routine","Bildung Basis"],color:"#bebc9b",w:89},
+    {lbl:"Wachstum",jobs:["KI-Engineer","AI Ethics Specialist","Human-AI Coach","Prompt Engineer"],color:"#3b6d11",w:100},
+  ];
+  document.getElementById('tl-list').innerHTML=waves.map(w=>`
+    <div class="tl-row">
+      <div class="tl-lbl">${w.lbl}</div>
+      <div>
+        <div class="tl-bar" style="width:${w.w}%;background:${w.color}">
+          ${w.jobs[0]} · ${w.jobs[1]}${w.jobs.length>2?' +'+( w.jobs.length-2):''}
+        </div>
+        <div class="tl-detail">${w.jobs.join(' · ')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSectors(){
+  document.getElementById('sector-grid').innerHTML=sectors.map((s,i)=>`
+    <div class="sector-card" onclick="showSD(${i})" id="sc-${i}">
+      <div class="s-name">${s.name}</div>
+      <div class="s-bar" style="width:${s.risk}%;background:${s.color}"></div>
+      <div class="s-stat">Risiko: ${s.risk}% · ${s.dis}M gefährdet · +${s.new}M neu</div>
+    </div>
+  `).join('');
+}
+
+function showSD(i){
+  document.querySelectorAll('.sector-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('sc-'+i).classList.add('sel');
+  const s=sectors[i];
+  document.getElementById('sector-detail').innerHTML=`
+    <div class="info-box">
+      <strong>${s.name}</strong><br>${s.detail}<br><br>
+      <span style="color:#da540d;font-weight:600">∆ Gefährdet: ${s.dis} Mio.</span> &nbsp;·&nbsp;
+      <span style="color:#3b6d11;font-weight:600">+ Neu: ${s.new} Mio.</span> &nbsp;·&nbsp;
+      <strong>Automatisierungsrisiko: ${s.risk}%</strong>
+    </div>`;
+}
+
+function renderChart(){
+  const sc=document.getElementById('scenSel').value;
+  const rg=document.getElementById('regSel').value;
+  const years=[2024,2025,2026,2027,2028,2029,2030,2031,2032,2033,2034,2035];
+  const m={global:1,dach:0.8,us:1.12}[rg];
+  const sc_data={
+    base: {auto:[4,7,10,14,19,24,30,35,40,44,48,52],trans:[3,5,8,12,17,21,25,28,30,32,33,34],new:[1,2,3,5,8,11,15,19,23,28,32,37]},
+    fast: {auto:[6,11,17,24,32,40,48,54,59,63,66,69],trans:[4,7,11,16,21,26,29,31,32,33,34,35],new:[2,3,5,8,13,18,23,29,34,40,45,50]},
+    slow: {auto:[2,4,6,9,12,15,18,22,26,30,35,40],trans:[2,3,5,7,10,13,17,20,23,26,29,32],new:[1,1,2,3,5,7,9,12,15,18,21,25]},
+  };
+  const d=sc_data[sc];
+  const ap=arr=>arr.map(v=>Math.round(v*m));
+  if(chartInst) chartInst.destroy();
+  chartInst=new Chart(document.getElementById('tChart'),{
+    type:'line',
+    data:{
+      labels:years,
+      datasets:[
+        {label:'Automatisiert',data:ap(d.auto),borderColor:'#da540d',backgroundColor:'rgba(218,84,13,0.08)',pointRadius:3,tension:0.4,fill:true,borderWidth:2.5},
+        {label:'Transformiert',data:ap(d.trans),borderColor:'#94D5F4',backgroundColor:'rgba(148,213,244,0.08)',pointRadius:3,tension:0.4,fill:true,borderDash:[5,3],borderWidth:2},
+        {label:'Neue Jobs',data:ap(d.new),borderColor:'#3b6d11',backgroundColor:'rgba(59,109,17,0.08)',pointRadius:3,tension:0.4,fill:true,borderDash:[2,4],borderWidth:2},
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{min:0,max:75,ticks:{callback:v=>v+'%',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'}},
+        x:{ticks:{font:{size:11}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function showLegal(id){
+  document.getElementById('impressum').classList.remove('active');
+  document.getElementById('datenschutz').classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+}
+function hideLegal(){
+  document.getElementById('impressum').classList.remove('active');
+  document.getElementById('datenschutz').classList.remove('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+renderRisk();
+renderTimeline();
+renderSectors();
+</script>
+</body>
+</html>
